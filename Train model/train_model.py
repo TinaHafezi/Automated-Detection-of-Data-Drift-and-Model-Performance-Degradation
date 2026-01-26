@@ -7,7 +7,7 @@ from sklearn.metrics import accuracy_score, f1_score, classification_report, con
 from sklearn.feature_selection import SelectFromModel
 
 
-def train_pipeline(data_path="telco.csv"):
+def train_pipeline(data_path="Train model/telco.csv"):
     print("Loading dataset...")
     df = pd.read_csv(data_path)
     
@@ -100,33 +100,33 @@ def train_pipeline(data_path="telco.csv"):
     
     # SAVE ALL ARTIFACTS
     # 1. Save the final model
-    joblib.dump(final_model, "model.pkl")
+    joblib.dump(final_model, "Train model/model.pkl")
     print("model.pkl - Final trained model")
     
     # 2. Save the feature selector
-    joblib.dump(selector, "feature_selector.pkl")
+    joblib.dump(selector, "Train model/feature_selector.pkl")
     print("feature_selector.pkl - Feature selector object")
     
     # 3. Save selected feature names
-    pd.Series(selected_features).to_csv("selected_features.csv", index=False)
+    pd.Series(selected_features).to_csv("Train model/selected_features.csv", index=False)
     print("selected_features.csv - List of selected features")
     
     # 4. Save reference data (with all features for monitoring)
     ref_df = pd.concat([X_train, y_train], axis=1)
-    ref_df.to_csv("reference.csv", index=False)
+    ref_df.to_csv("Train model/reference.csv", index=False)
     print("reference.csv - Training data with all features")
     
     # 5. Save production data (with all features)
     prod_df = pd.concat([X_prod, y_prod], axis=1)
-    prod_df.to_csv("current.csv", index=False)
+    prod_df.to_csv("Train model/current.csv", index=False)
     print("current.csv - Production data with all features")
     
     # 6. Save baseline metrics
-    pd.DataFrame([baseline_metrics]).to_csv("baseline_metrics.csv", index=False)
+    pd.DataFrame([baseline_metrics]).to_csv("Train model/baseline_metrics.csv", index=False)
     print("baseline_metrics.csv - Baseline performance metrics")
     
     # 7. Save all feature columns (for consistency checks)
-    pd.Series(X_encoded.columns.tolist()).to_csv("all_features.csv", index=False)
+    pd.Series(X_encoded.columns.tolist()).to_csv("Train model/all_features.csv", index=False)
     print("all_features.csv - All original feature names")
     
     # 8. Save selected features data for easy inspection
