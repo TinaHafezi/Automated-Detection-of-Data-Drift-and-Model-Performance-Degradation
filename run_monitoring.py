@@ -1,4 +1,4 @@
-from dataset_adapter import TelcoAdapter  # ← بعداً می‌تونی EthereumAdapter بذاری
+from dataset_adapter import TelcoAdapter
 from data_loader import DataLoader
 from drift_detection import calculate_psi
 
@@ -11,7 +11,7 @@ ref_X, ref_y = loader.load_reference_data()
 cur_X, cur_y = loader.load_current_data()
 
 
-#### for changing the data and seeing a drift
+# for changing the data and seeing a drift
 # cur_X["MonthlyCharges"] *= 2
 
 print("✅ Data loaded")
@@ -34,10 +34,10 @@ for col in ref_X.columns:
 
     print(f"{col:25s} PSI={psi:.3f} → {status}")
 
-print("\n==============================")
+print("\n" + "="*50)
 print(f"TOTAL DRIFTED FEATURES: {len(drifted_features)} / {len(ref_X.columns)}")
 
 if drifted_features:
-    print("⚠️ DATA DRIFT DETECTED!")
+    print("DATA DRIFT DETECTED!")
 else:
-    print("✅ Data distribution stable.")
+    print("Data distribution stable.")

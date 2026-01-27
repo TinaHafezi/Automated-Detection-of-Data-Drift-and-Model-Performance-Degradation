@@ -30,7 +30,7 @@ class TelcoAdapter(BaseDatasetAdapter):
         return "Churn"
 
 
-# ---------------- ETHEREUM (برای بعداً) ----------------
+# ---------------- ETHEREUM ----------------
 class EthereumAdapter(BaseDatasetAdapter):
 
     def preprocess(self, df):

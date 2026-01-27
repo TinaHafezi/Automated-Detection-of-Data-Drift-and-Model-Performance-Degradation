@@ -28,7 +28,6 @@ class DataLoader:
         X_selected = self.selector.transform(X)
         return pd.DataFrame(X_selected, columns=self.selected_features)
 
-    # 🔥 NOTE: reference.csv and current.csv are ALREADY PREPROCESSED
     def load_reference_data(self):
         df = pd.read_csv(self.base_path / "reference.csv")
 
