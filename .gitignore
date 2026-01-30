@@ -2,3 +2,7 @@
 config.yaml
 
 __pycache__/
+
+metrics.db
+
+training_selected_features.csv
