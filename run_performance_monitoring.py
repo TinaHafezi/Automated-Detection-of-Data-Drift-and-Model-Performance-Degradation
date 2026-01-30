@@ -1,53 +1,47 @@
-from dataset_adapter import TelcoAdapter
-from data_loader import DataLoader
 from model_monitor import ModelMonitor
-import pandas as pd
-from datetime import datetime
-from pathlib import Path
+from data_loader import DataLoader
+from metrics_store import MetricsStore
+import joblib
 
-print("\n🔄 Loading model and data...")
+print("🔄 Loading model & data...")
 
-adapter = TelcoAdapter()
-loader = DataLoader(adapter)
+loader = DataLoader(dataset_name="telco")
+X_current, y_current = loader.load_current_data()
+
 monitor = ModelMonitor()
+model = monitor.load_model("model.pkl")
 
-cur_X, cur_y = loader.load_current_data()
+y_pred = monitor.predict(model, X_current)
 
-model = monitor.load_model("Train model/model.pkl")
+print("📈 Calculating performance metrics...")
 
-baseline = pd.read_csv("Train model/baseline_metrics.csv").iloc[0].to_dict()
+# فرض: مدل طبقه‌بندی Telco
+current_metrics = monitor.classification_metrics(y_current, y_pred)
 
-print("📈 Evaluating model...")
+# Baseline metrics (ذخیره‌شده از زمان train)
+baseline_metrics = {
+    "accuracy": 0.80,
+    "f1": 0.78,
+    "precision": 0.77,
+    "recall": 0.79,
+}
 
-preds = monitor.predict(model, cur_X)
-current_metrics = monitor.classification_metrics(cur_y, preds)
+drops = monitor.compare_performance(baseline_metrics, current_metrics)
 
-drops = monitor.compare_performance(baseline, current_metrics)
+# Save to DB
+store = MetricsStore()
 
-print("\nCurrent Metrics:", current_metrics)
-print("Metric Drops:", drops)
+metrics_to_save = {}
 
-status = "STABLE"
-if any(v > 0.05 for v in drops.values()):
-    status = "PERFORMANCE DEGRADATION ⚠️"
+for k, v in current_metrics.items():
+    metrics_to_save[f"current_{k}"] = v
 
-print("MODEL STATUS:", status)
+for k, v in drops.items():
+    metrics_to_save[f"drop_{k}"] = v
 
-# LOGGING 
-log_file = Path("performance_log.xlsx")
+store.save_metrics(metrics_to_save)
 
-row = pd.DataFrame([{
-    "timestamp": datetime.now(),
-    **baseline,
-    **current_metrics,
-    **drops,
-    "status": status
-}])
-
-if log_file.exists():
-    old = pd.read_excel(log_file)
-    row = pd.concat([old, row], ignore_index=True)
-
-row.to_excel(log_file, index=False)
-
-print(f"\n📁 Logged to {log_file}")
+print("\n" + "="*50)
+print("Current Performance:", current_metrics)
+print("Performance Drops:", drops)
+print("📁 Performance metrics saved to metrics.db")

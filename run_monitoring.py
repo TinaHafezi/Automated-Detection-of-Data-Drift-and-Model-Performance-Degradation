@@ -1,62 +1,32 @@
-from dataset_adapter import TelcoAdapter
 from data_loader import DataLoader
-from drift_detection import calculate_psi
-import pandas as pd
-from datetime import datetime
-from pathlib import Path
+from drift_detection import detect_drift
+from metrics_store import MetricsStore
 
-print("\n🔄 Loading data...")
-
-adapter = TelcoAdapter()
-loader = DataLoader(adapter)
+print("🔄 Loading data...")
+loader = DataLoader(dataset_name="telco")
 
 ref_X, ref_y = loader.load_reference_data()
 cur_X, cur_y = loader.load_current_data()
 
-print("✅ Data loaded")
-print("\n📊 Running drift detection...\n")
+print("📊 Running drift detection...")
+drift_results = detect_drift(ref_X, cur_X)
 
-drifted_features = []
-results = []
+# Save to DB
+store = MetricsStore()
 
-for col in ref_X.columns:
-    psi = calculate_psi(ref_X[col], cur_X[col])
+metrics_to_save = {}
+drift_count = 0
 
-    if psi < 0.1:
-        status = "NO DRIFT"
-    elif psi < 0.25:
-        status = "MODERATE DRIFT"
-        drifted_features.append(col)
-    else:
-        status = "SIGNIFICANT DRIFT"
-        drifted_features.append(col)
+for feature, psi in drift_results.items():
+    metrics_to_save[f"PSI_{feature}"] = psi
+    if psi > 0.2:
+        drift_count += 1
 
-    print(f"{col:25s} PSI={psi:.3f} → {status}")
+metrics_to_save["total_drifted_features"] = drift_count
+metrics_to_save["total_features_checked"] = len(drift_results)
 
-    results.append({
-        "timestamp": datetime.now(),
-        "feature": col,
-        "psi": round(psi, 4),
-        "status": status
-    })
+store.save_metrics(metrics_to_save)
 
 print("\n" + "="*50)
-print(f"TOTAL DRIFTED FEATURES: {len(drifted_features)} / {len(ref_X.columns)}")
-
-if drifted_features:
-    print("⚠️ DATA DRIFT DETECTED!")
-else:
-    print("✅ Data distribution stable.")
-
-# SAVE TO EXCEL
-
-log_file = Path("monitoring_log.xlsx")
-df_results = pd.DataFrame(results)
-
-if log_file.exists():
-    old_df = pd.read_excel(log_file)
-    df_results = pd.concat([old_df, df_results], ignore_index=True)
-
-df_results.to_excel(log_file, index=False)
-
-print(f"\n📁 Results appended to {log_file}")
+print(f"TOTAL DRIFTED FEATURES: {drift_count} / {len(drift_results)}")
+print("📁 Drift metrics saved to metrics.db")
