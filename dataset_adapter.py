@@ -1,6 +1,5 @@
 import pandas as pd
 
-
 class BaseDatasetAdapter:
     def preprocess(self, df: pd.DataFrame) -> pd.DataFrame:
         raise NotImplementedError
@@ -9,7 +8,7 @@ class BaseDatasetAdapter:
         raise NotImplementedError
 
 
-# ---------------- TELCO ----------------
+# ================= TELCO =================
 class TelcoAdapter(BaseDatasetAdapter):
 
     def preprocess(self, df):
@@ -18,19 +17,17 @@ class TelcoAdapter(BaseDatasetAdapter):
         df['Churn'] = df['Churn'].map({'Yes': 1, 'No': 0})
 
         if df['TotalCharges'].dtype == 'object':
-            df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors='coerce')
-            df['TotalCharges'] = df['TotalCharges'].fillna(0)
+            df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors='coerce').fillna(0)
 
         X = df.drop('Churn', axis=1)
         X = pd.get_dummies(X, drop_first=True)
-
         return X
 
     def get_target_column(self):
         return "Churn"
 
 
-# ---------------- ETHEREUM ----------------
+# ================= ETHEREUM =================
 class EthereumAdapter(BaseDatasetAdapter):
 
     def preprocess(self, df):
@@ -42,3 +39,13 @@ class EthereumAdapter(BaseDatasetAdapter):
 
     def get_target_column(self):
         return "price_change"
+
+
+# Adapter factory
+def get_adapter(dataset_name: str) -> BaseDatasetAdapter:
+    if dataset_name == "telco":
+        return TelcoAdapter()
+    elif dataset_name == "ethereum":
+        return EthereumAdapter()
+    else:
+        raise ValueError(f"Unsupported dataset: {dataset_name}")
