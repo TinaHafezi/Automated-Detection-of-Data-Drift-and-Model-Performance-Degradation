@@ -1,2 +1,4 @@
 # Configuration files
 config.yaml
+
+__pycache__/
