@@ -1,15 +1,14 @@
-0
 tenure
 MonthlyCharges
 TotalCharges
+gender_Male
+Dependents_Yes
 InternetService_Fiber optic
-OnlineSecurity_No internet service
 OnlineSecurity_Yes
 OnlineBackup_No internet service
+OnlineBackup_Yes
 DeviceProtection_No internet service
-TechSupport_No internet service
 TechSupport_Yes
-StreamingTV_No internet service
 Contract_One year
 Contract_Two year
 PaperlessBilling_Yes
