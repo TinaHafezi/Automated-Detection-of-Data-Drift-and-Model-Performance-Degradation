@@ -24,6 +24,7 @@ df["timestamp"] = pd.to_datetime(df["timestamp"])
 drift_df = df[df["metric_name"].str.contains("PSI_")]
 perf_df = df[df["metric_name"].str.contains("current_")]
 drop_df = df[df["metric_name"].str.contains("drop_")]
+drift_df["feature"] = drift_df["metric_name"].str.replace("PSI_", "")
 
 # Latest snapshot
 latest = df.sort_values("timestamp").groupby("metric_name").tail(1)
@@ -39,7 +40,7 @@ with col1:
         drift_df,
         x="timestamp",
         y="value",
-        color="metric_name",
+        color="feature",
         title="PSI per Feature Over Time"
     )
     st.plotly_chart(fig_drift, use_container_width=True)
@@ -81,8 +82,10 @@ with col4:
     if not acc.empty:
         st.metric("Current Accuracy", f"{acc.values[0]:.3f}")
 
+    PERF_DROP_THRESHOLD = config.get("monitoring", "performance_drop_threshold")
+    
     if not drop_acc.empty:
-        if drop_acc.values[0] > 0.05:
+        if drop_acc.values[0] > PERF_DROP_THRESHOLD:
             st.error(f"⚠️ Accuracy Drop: {drop_acc.values[0]:.3f}")
         else:
             st.success("Performance Stable")
