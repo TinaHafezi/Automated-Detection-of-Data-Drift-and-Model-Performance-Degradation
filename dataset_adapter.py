@@ -1,30 +1,35 @@
 import pandas as pd
 
+
 class BaseDatasetAdapter:
-    def preprocess(self, df: pd.DataFrame) -> pd.DataFrame:
-        raise NotImplementedError
-
-    def get_target_column(self) -> str:
-        raise NotImplementedError
-
-
-# ================= TELCO =================
-class TelcoAdapter(BaseDatasetAdapter):
-
     def preprocess(self, df):
-        df = df.drop('customerID', axis=1)
+        raise NotImplementedError
 
-        df['Churn'] = df['Churn'].map({'Yes': 1, 'No': 0})
+    def get_target_column(self):
+        raise NotImplementedError
 
-        if df['TotalCharges'].dtype == 'object':
-            df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors='coerce').fillna(0)
 
-        X = df.drop('Churn', axis=1)
-        X = pd.get_dummies(X, drop_first=True)
-        return X
+class TelcoAdapter(BaseDatasetAdapter):
 
     def get_target_column(self):
         return "Churn"
+
+    def preprocess(self, df):
+
+        # Robust drop 
+        df = df.drop('customerID', axis=1, errors='ignore')
+
+        # Encode target if exists
+        if 'Churn' in df.columns and df['Churn'].dtype == 'object':
+            df['Churn'] = df['Churn'].map({'Yes': 1, 'No': 0})
+
+        # Fix TotalCharges if exists
+        if 'TotalCharges' in df.columns and df['TotalCharges'].dtype == 'object':
+            df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors='coerce').fillna(0)
+
+        return df
+
+
 
 
 # ================= ETHEREUM =================
