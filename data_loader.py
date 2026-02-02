@@ -1,18 +1,18 @@
 import pandas as pd
 import joblib
-from dataset_adapter import get_adapter
-
 
 class DataLoader:
     def __init__(self, dataset_name="telco"):
-        self.dataset_name = dataset_name
-        self.adapter = get_adapter(dataset_name)
-
-        # Shared training artifacts
         self.selector = joblib.load("Train model/feature_selector.pkl")
-        self.all_features = pd.read_csv("Train model/all_features.csv").iloc[:, 0].tolist()
 
-    # ================= PUBLIC =================
+        self.all_features = pd.read_csv(
+            "Train model/all_features.csv", header=None
+        ).iloc[:, 0].tolist()
+
+        self.selected_features = pd.read_csv(
+            "Train model/selected_features.csv", header=None
+        ).iloc[:, 0].tolist()
+
     def load_reference_data(self):
         df = pd.read_csv("Train model/reference.csv")
         return self._process(df)
@@ -21,17 +21,21 @@ class DataLoader:
         df = pd.read_csv("Train model/current.csv")
         return self._process(df)
 
-    # ================= CORE PIPELINE =================
     def _process(self, df):
-        target_col = self.adapter.get_target_column()
+        y = df["Churn"]
+        X = df.drop("Churn", axis=1)
 
-        y = df[target_col]
-        X_raw = self.adapter.preprocess(df)
+        # Align columns exactly as training
+        X = X.reindex(columns=self.all_features, fill_value=0)
 
-        # 🔹 Ensure SAME features as training
-        X_raw = X_raw.reindex(columns=self.all_features, fill_value=0)
+        # Feature selection
+        X_selected_array = self.selector.transform(X)
 
-        # 🔹 Apply feature selection from training
-        X_selected = self.selector.transform(X_raw)
+        # Reattach real feature names
+        X_selected = pd.DataFrame(
+            X_selected_array,
+            columns=self.selected_features,
+            index=X.index
+        )
 
-        return pd.DataFrame(X_selected), y
+        return X_selected, y
