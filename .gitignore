@@ -14,6 +14,5 @@ eth/all_features.csv
 eth/baseline_metrics.csv
 eth/current.csv
 eth/eth_day.csv
-eth/eth_1h.csv
 eth/reference.csv
 eth/selected_features.csv
