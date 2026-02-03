@@ -58,7 +58,10 @@ print("\n📈 Running performance monitoring...")
 model = monitor.load_model(MODEL_PATH)
 y_pred = monitor.predict(model, cur_X)
 
-current_metrics = monitor.classification_metrics(cur_y, y_pred)
+if DATASET_NAME == "ethereum":
+    current_metrics = monitor.regression_metrics(cur_y, y_pred)
+else:
+    current_metrics = monitor.classification_metrics(cur_y, y_pred)
 baseline_metrics = pd.read_csv(BASELINE_PATH).iloc[0].to_dict()
 drops = monitor.compare_performance(baseline_metrics, current_metrics)
 
@@ -68,7 +71,14 @@ for k, v in current_metrics.items():
 for k, v in drops.items():
     metrics_to_save[f"drop_{k}"] = v
 
-accuracy_drop = drops.get("accuracy", 0)
+if DATASET_NAME == "ethereum":
+    perf_drop = max(
+        drops.get("mae", 0),
+        drops.get("rmse", 0),
+        abs(drops.get("r2", 0))
+    )
+else:
+    perf_drop = drops.get("accuracy", 0)
 
 print("Current performance:", current_metrics)
 print("Performance drops:", drops)
@@ -89,10 +99,10 @@ if EMAIL_ENABLED:
             f"{drift_count} features exceeded PSI threshold ({DRIFT_THRESHOLD})."
         )
 
-    if accuracy_drop > PERF_DROP_THRESHOLD:
+    if perf_drop > PERF_DROP_THRESHOLD:
         alert.send_alert(
-            "🚨 ML Alert: Model Performance Drop",
-            f"Accuracy dropped by {accuracy_drop:.3f}"
+            "🚨 ML Alert: Model Performance Degradation",
+            f"Performance degraded. Drop score: {perf_drop:.3f}"
         )
 
     if drift_count == 0 and accuracy_drop <= PERF_DROP_THRESHOLD:
