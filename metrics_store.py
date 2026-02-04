@@ -1,7 +1,7 @@
 import sqlite3
 import pandas as pd
 from datetime import datetime
-
+import numpy as np
 
 class MetricsStore:
 
@@ -36,3 +36,22 @@ class MetricsStore:
         df = pd.read_sql("SELECT * FROM metrics", conn)
         conn.close()
         return df
+    
+    def get_historical_stats(self, metric_name, window=30):
+        conn = sqlite3.connect("metrics.db")
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT value FROM metrics
+            WHERE metric_name = ?
+            ORDER BY timestamp DESC
+            LIMIT ?
+        """, (metric_name, window))
+
+        values = [row[0] for row in cursor.fetchall()]
+        conn.close()
+
+        if len(values) < 5:
+            return None, None  # not enough history
+
+        return np.mean(values), np.std(values)
