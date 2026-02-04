@@ -1,8 +1,49 @@
 import streamlit as st
+import sqlite3
 import pandas as pd
+import plotly.graph_objects as go
 import plotly.express as px
 from metrics_store import MetricsStore
 from config_loader import Config
+
+def load_metrics():
+    conn = sqlite3.connect("metrics.db")
+    df = pd.read_sql("SELECT * FROM metrics", conn)
+    conn.close()
+    return df
+
+def risk_gauge(score):
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=score,
+        title={'text': "System Risk Score"},
+        gauge={
+            'axis': {'range': [0, 100]},
+            'bar': {'thickness': 0.4},
+            'steps': [
+                {'range': [0, 30], 'color': "green"},
+                {'range': [30, 60], 'color': "yellow"},
+                {'range': [60, 100], 'color': "red"},
+            ],
+        }
+    ))
+    st.plotly_chart(fig, use_container_width=True)
+
+def system_status(score):
+    if score < 30:
+        st.success("🟢 SYSTEM HEALTHY")
+    elif score < 60:
+        st.warning("🟡 SYSTEM AT RISK")
+    else:
+        st.error("🔴 CRITICAL SYSTEM RISK")
+
+def risk_trend(df):
+    risk_df = df[df["metric_name"] == "system_risk_score"]
+    risk_df["timestamp"] = pd.to_datetime(risk_df["timestamp"])
+
+    st.line_chart(
+        risk_df.set_index("timestamp")["value"]
+    )
 
 config = Config()
 
@@ -31,6 +72,21 @@ latest = df.sort_values("timestamp").groupby("metric_name").tail(1)
 
 
 # DRIFT SECTION
+st.header("🧠 Concept / Prediction Drift")
+
+pred_df = df[df["metric_name"].str.contains("PRED_")]
+
+if not pred_df.empty:
+    fig_pred = px.line(
+        pred_df,
+        x="timestamp",
+        y="value",
+        color="metric_name",
+        title="Prediction Drift Metrics"
+    )
+    st.plotly_chart(fig_pred, use_container_width=True)
+
+
 st.header("📊 Data Drift Monitoring")
 
 col1, col2 = st.columns(2)
