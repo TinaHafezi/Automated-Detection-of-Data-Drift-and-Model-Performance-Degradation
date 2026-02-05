@@ -95,13 +95,16 @@ Used to detect:
 
 ### 💡 Performance Monitoring
 
-*(unchanged)*
+- Computes performance metrics over production data:
+  - Classification: *Accuracy, F1, Precision, Recall*
+  - Regression: *MAE, RMSE, R²*
+- Compares against baseline (validation) metrics
+- Logs historic performance
 
 ---
 
 ### 🛠️ Modular and Extensible
 
-*(unchanged except now drift engine is modular)*
 
 * Adapter-based inputs — add new datasets easily
 * Separate data loader for each dataset
@@ -110,7 +113,55 @@ Used to detect:
 * **Pluggable drift detectors inside `drift_detection/`**
 
 ---
+## 🧪 How to Train Models
 
+### ☑️ Train Telco Model
+
+```bash
+python "Train model/train_model.py"
+```
+
+### ☑️ Train Ethereum Model (1-hour)
+
+```bash
+python Eth/train_model.py
+```
+
+This will generate all required artifacts for monitoring.
+
+---
+
+## ▶️ Running the Monitoring Pipeline
+
+Configure your dataset in `config.yaml`:
+
+```yaml
+app:
+  dataset_name: "ethereum"         # "telco" or "ethereum"
+model:
+  path: "Eth/model.pkl"
+  baseline_metrics_path: "Eth/baseline_metrics.csv"
+monitoring:
+  drift_threshold: 0.2
+  performance_drop_threshold: 0.05
+alerts:
+  email_enabled: false
+```
+
+Then run:
+
+```bash
+python main.py
+```
+
+This script performs:
+
+* Drift Detection
+* Performance Evaluation
+* Metrics Logging
+* Optional Alerts
+
+---
 ### 🧪 Synthetic Drift Simulation
 
 The system includes a **drift injection module** to simulate real-world failures:
@@ -142,6 +193,45 @@ This script now performs:
 
 ---
 
+## 📩 Alerting & Notifications
+
+The system supports email alerts via SMTP (e.g., Gmail). Use an **App Password** for security.
+
+Configure in `config.yaml`:
+
+```yaml
+alerts:
+  email_enabled: true
+  sender_email: "example@gmail.com"
+  sender_password: "app_password_here"
+  receiver_email: "notify@domain.com"
+```
+
+Alerts trigger when:
+
+✔ Drift > threshold
+✔ Performance drop > threshold
+
+---
+## 📝 Example Config (config.yaml)
+
+```yaml
+app:
+  dataset_name: "telco"
+model:
+  path: "Train model/model.pkl"
+  baseline_metrics_path: "Train model/baseline_metrics.csv"
+monitoring:
+  drift_threshold: 0.2
+  performance_drop_threshold: 0.05
+alerts:
+  email_enabled: false
+dashboard:
+  host: "localhost"
+  port: 8501
+```
+
+---
 ## 🧠 Why This Matters
 
 This system demonstrates:
