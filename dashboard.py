@@ -14,11 +14,10 @@ def load_metrics():
     return df
 
 def risk_gauge(score):
-    """Create risk gauge visualization"""
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=score,
-        title={'text': "System Risk Score"},
+        title={'text': "امتیاز ریسک سیستم"},
         gauge={
             'axis': {'range': [0, 100]},
             'bar': {'thickness': 0.4},
@@ -31,9 +30,10 @@ def risk_gauge(score):
     ))
     return fig
 
+
 def display_drift_metrics(df):
     """Display all drift metrics in a compact view"""
-    st.subheader("📊 Statistical Drift Metrics")
+    st.subheader("📊 معیارهای دریفت آماری")
     
     latest = df.sort_values("timestamp").groupby("metric_name").tail(1)
     
@@ -41,7 +41,7 @@ def display_drift_metrics(df):
     col1, col2 = st.columns(2)
     
     with col1:
-        st.write("**Kolmogorov-Smirnov Test**")
+        st.write("**آزمون کولموگروف–اسمیرنوف (KS Test)**")
         ks_metrics = latest[latest["metric_name"].str.startswith("KS_")]
         if not ks_metrics.empty:
             ks_summary = []
@@ -69,10 +69,12 @@ def display_drift_metrics(df):
             problematic = sum(1 for _, row in ks_metrics.iterrows() 
                             if isinstance(row["value"], (int, float, np.number)) and row["value"] < 0.01)
             if problematic > 0:
-                st.error(f"{problematic} features with significantly different distributions")
+                st.error(f"{problematic} ویژگی دارای اختلاف توزیع شدید هستند")
+
     
     with col2:
-        st.write("**Wasserstein Distance**")
+        st.write("**فاصله واسرشتاین (Wasserstein Distance)**")
+
         wasserstein_metrics = latest[latest["metric_name"].str.startswith("WASS_")]
         if not wasserstein_metrics.empty:
             wasserstein_summary = []
@@ -98,14 +100,16 @@ def display_drift_metrics(df):
                 st.dataframe(wasserstein_df, height=200, use_container_width=True)
                 
                 if high_drift_count > 0:
-                    st.error(f"{high_drift_count} features with extreme Wasserstein drift (>10)")
+                    st.error(f"{high_drift_count} ویژگی دارای دریفت شدید واسرشتاین هستند")
+
     
     # Data Quality Issues
-    st.subheader("🔍 Data Quality Issues")
+    st.subheader("🔍 مشکلات کیفیت داده")
+
     dq_col1, dq_col2 = st.columns(2)
     
     with dq_col1:
-        st.write("**Missing Values**")
+        st.write("**مقادیر گمشده**")
         missing_metrics = latest[latest["metric_name"].str.contains("dq_missing_")]
         if not missing_metrics.empty:
             for _, row in missing_metrics.iterrows():
@@ -113,12 +117,12 @@ def display_drift_metrics(df):
                 value = row["value"]
                 try:
                     if float(value) > 0:
-                        st.warning(f"{feature}: {float(value):.1%} missing")
+                        st.warning(f"{feature}: {float(value):.1%} داده گمشده")
                 except:
                     pass
     
     with dq_col2:
-        st.write("**Zero Values**")
+        st.write("**مقادیر صفر غیرعادی**")
         zero_metrics = latest[latest["metric_name"].str.contains("dq_zero_")]
         if not zero_metrics.empty:
             for _, row in zero_metrics.iterrows():
@@ -126,12 +130,12 @@ def display_drift_metrics(df):
                 value = row["value"]
                 try:
                     if float(value) > 0.1:  # More than 10% zeros
-                        st.warning(f"{feature}: {float(value):.1%} zeros")
+                        st.warning(f"{feature}: {float(value):.1%} مقدار صفر")
                 except:
                     pass
     
     # Prediction Drift
-    st.subheader("📈 Prediction Drift")
+    st.subheader("📈 دریفت پیش‌بینی مدل")
     pred_metrics = latest[latest["metric_name"].str.startswith("PRED_")]
     if not pred_metrics.empty:
         pred_col1, pred_col2, pred_col3 = st.columns(3)
@@ -141,9 +145,9 @@ def display_drift_metrics(df):
             if len(mean_shift) > 0:
                 try:
                     val = float(mean_shift[0])
-                    st.metric("Mean Shift", f"{val:.2f}")
+                    st.metric("تغییر میانگین پیش‌بینی", f"{val:.2f}")
                     if abs(val) > 10:
-                        st.error("Extreme bias!")
+                        st.error("بایاس شدید در پیش‌بینی!")
                 except:
                     st.metric("Mean Shift", "N/A")
         
@@ -152,24 +156,23 @@ def display_drift_metrics(df):
             if len(dist_shift) > 0:
                 try:
                     val = float(dist_shift[0])
-                    st.metric("Distribution Shift", f"{val:.2f}")
+                    st.metric("تغییر توزیع پیش‌بینی", f"{val:.2f}")
                     if val > 50:
                         st.error("Major shift!")
                 except:
-                    st.metric("Distribution Shift", "N/A")
+                    st.error("تغییر توزیع بسیار زیاد!")
         
         with pred_col3:
             conf_shift = latest[latest["metric_name"] == "PRED_confidence_shift"]["value"].values
             if len(conf_shift) > 0:
                 try:
                     val = float(conf_shift[0])
-                    st.metric("Confidence Shift", f"{val:.2f}")
+                    st.metric("تغییر اطمینان مدل", f"{val:.2f}")
                 except:
-                    st.metric("Confidence Shift", "N/A")
+                    st.metric("تغییر اطمینان مدل", "N/A")
 
 def display_performance_metrics(df):
-    """Display model performance metrics"""
-    st.subheader("🎯 Model Performance")
+    st.subheader("🎯 عملکرد مدل")
     
     latest = df.sort_values("timestamp").groupby("metric_name").tail(1)
     perf_col1, perf_col2 = st.columns(2)
@@ -181,9 +184,9 @@ def display_performance_metrics(df):
             metric = row["metric_name"].replace("current_", "")
             value = row["value"]
             try:
-                st.metric(f"Current {metric}", f"{float(value):.3f}")
+                st.metric(f"مقدار فعلی {metric}", f"{float(value):.3f}")
             except:
-                st.metric(f"Current {metric}", str(value))
+                st.metric(f"مقدار فعلی  {metric}", str(value))
     
     with perf_col2:
         # Drop metrics
@@ -193,15 +196,14 @@ def display_performance_metrics(df):
             value = row["value"]
             try:
                 val = float(value)
-                st.metric(f"{metric} Drop", f"{val:.3f}")
+                st.metric(f"افت {metric}", f"{val:.3f}")
                 if val > 0.05:  # 5% drop threshold
-                    st.error(f"Significant {metric} drop!")
+                    st.error(f"افت شدید در {metric}!")
             except:
-                st.metric(f"{metric} Drop", str(value))
+                st.metric(f"{metric} افت", str(value))
 
 def display_alerts(df):
-    """Generate and display system alerts"""
-    st.subheader("🚨 System Alerts")
+    st.subheader("🚨 هشدارهای سیستم")
     
     latest = df.sort_values("timestamp").groupby("metric_name").tail(1)
     alerts = []
@@ -217,7 +219,8 @@ def display_alerts(df):
             pass
     
     if extreme_wasserstein > 0:
-        alerts.append(f"🔴 {extreme_wasserstein} features with extreme Wasserstein drift (>100)")
+        alerts.append(f"🔴 {extreme_wasserstein} ویژگی دارای دریفت بسیار شدید واسرشتاین هستند")
+
     
     # Check KS test results
     ks_metrics = latest[latest["metric_name"].str.startswith("ks_")]
@@ -231,16 +234,16 @@ def display_alerts(df):
             pass
     
     if problematic_ks > 0:
-        alerts.append(f"🟡 {problematic_ks} features with completely different distributions (KS ≈ 0)")
+        alerts.append(f"🟡 {problematic_ks} ویژگی دارای تغییر کامل توزیع هستند")
     
     # Check prediction drift
     pred_mean = latest[latest["metric_name"] == "PRED_mean_shift"]["value"].values
     if len(pred_mean) > 0:
         try:
             if abs(float(pred_mean[0])) > 50:
-                alerts.append(f"🔴 Extreme prediction bias: {float(pred_mean[0]):.1f}")
+                alerts.append(f"🔴 بایاس شدید پیش‌بینی: {float(pred_mean[0]):.1f}")
             elif abs(float(pred_mean[0])) > 10:
-                alerts.append(f"🟡 Significant prediction bias: {float(pred_mean[0]):.1f}")
+                alerts.append(f"🟡 بایاس قابل توجه پیش‌بینی: {float(pred_mean[0]):.1f}")
         except:
             pass
     
@@ -255,7 +258,7 @@ def display_alerts(df):
             pass
     
     if high_missing > 0:
-        alerts.append(f"🟡 {high_missing} features with >20% missing values")
+        alerts.append(f"🟡 {high_missing} ویژگی دارای بیش از ۲۰٪ داده گمشده هستند")
     
     # Display alerts
     if alerts:
@@ -267,11 +270,11 @@ def display_alerts(df):
             else:
                 st.info(alert)
     else:
-        st.success("✅ No critical alerts - System is stable")
+        st.success("✅ هشدار بحرانی وجود ندارد — سیستم پایدار است")
 
 # ========== MAIN DASHBOARD ==========
 st.set_page_config(layout="wide")
-st.title("🧠 ML Model Monitoring Dashboard")
+st.title("🧠 داشبورد پایش مدل یادگیری ماشین")
 
 # Sidebar
 with st.sidebar:
@@ -305,10 +308,10 @@ if df.empty:
 # Convert timestamp
 df["timestamp"] = pd.to_datetime(df["timestamp"])
 latest_timestamp = df["timestamp"].max()
-st.caption(f"Last update: {latest_timestamp}")
+st.caption(f"آخرین اپدیت: {latest_timestamp}")
 
 # ========== RISK OVERVIEW ==========
-st.header("⚠️ System Risk Overview")
+st.header("⚠️ نمای کلی ریسک سیستم")
 
 # Get the ACTUAL risk score from your data (not calculate it)
 latest = df.sort_values("timestamp").groupby("metric_name").tail(1)
@@ -334,11 +337,11 @@ with col1:
 with col2:
     # Risk status
     if risk_score < 30:
-        st.success("🟢 SYSTEM HEALTHY")
+        st.success("🟢 سیستم سالم است")
     elif risk_score < 60:
-        st.warning("🟡 SYSTEM AT RISK")
+        st.warning("🟡 سیستم در وضعیت ریسک")
     else:
-        st.error("🔴 CRITICAL SYSTEM RISK")
+        st.error("🔴 وضعیت بحرانی سیستم")
     
     st.metric("Risk Score", f"{risk_score:.1f}/100")
     
@@ -346,14 +349,14 @@ with col2:
     static_drift = latest[latest["metric_name"] == "static_drifted_features"]["value"].values
     dynamic_drift = latest[latest["metric_name"] == "dynamic_drifted_features"]["value"].values
     
-    st.subheader("Drift Summary")
+    st.subheader("خلاصه دریفت")
     if len(static_drift) > 0:
-        st.write(f"📊 Static drift: {int(static_drift[0])} features")
+        st.write(f"📊 دریفت ایستا: {int(static_drift[0])} ویژگی")
     if len(dynamic_drift) > 0:
-        st.write(f"📈 Dynamic drift: {int(dynamic_drift[0])} features")
+        st.write(f"📈 دریفت پویا: {int(dynamic_drift[0])} ویژگی")
     
     # Time info
-    st.write(f"⏰ Last run: {latest_timestamp:%H:%M:%S}")
+    st.write(f"⏰ آخرین اجرا: {latest_timestamp:%H:%M:%S}")
 
 # ========== ALERTS SECTION ==========
 display_alerts(df)
@@ -365,7 +368,7 @@ display_drift_metrics(df)
 display_performance_metrics(df)
 
 # ========== TREND VISUALIZATIONS ==========
-st.subheader("📈 Trends Over Time")
+st.subheader("📈 روند تغییرات در طول زمان")
 
 # Filter for risk score trend
 risk_df = df[df["metric_name"] == "system_risk_score"].copy()
@@ -376,14 +379,14 @@ if not risk_df.empty:
         risk_df.dropna(subset=["numeric_value"]),
         x="timestamp",
         y="numeric_value",
-        title="Risk Score Trend Over Time",
+        title="روند امتیاز ریسک سیستم",
         markers=True
     )
     fig.update_layout(yaxis_range=[0, 100])
     st.plotly_chart(fig, use_container_width=True)
 
 # Add other metrics visualization
-st.subheader("📊 Other Metric Trends")
+st.subheader("📊 روند سایر متریک‌ها")
 
 # Select metrics to visualize (excluding system_risk_score since we already showed it)
 metric_options = sorted([m for m in df["metric_name"].unique() if m != "system_risk_score"])
@@ -412,13 +415,13 @@ if selected_metrics:
         x="timestamp",
         y="numeric_value",
         color="metric_name",
-        title="Selected Metrics Over Time",
+        title="معیارهای منتخب در طول زمان",
         markers=True
     )
     st.plotly_chart(fig, use_container_width=True)
 
 # ========== RECENT DATA ==========
-with st.expander("📋 Recent Metrics Data"):
+with st.expander("📋 آخرین مقادیر متریک‌ها"):
     # Show latest values
     latest_df = df.sort_values("timestamp").groupby("metric_name").tail(1)
     latest_df = latest_df.sort_values("metric_name")
@@ -457,7 +460,7 @@ with st.expander("📋 Recent Metrics Data"):
     # Download button
     csv = filtered_df.to_csv(index=False).encode('utf-8')
     st.download_button(
-        label="Download CSV",
+        label="دانلود CSV",
         data=csv,
         file_name="latest_metrics.csv",
         mime="text/csv",
@@ -465,4 +468,4 @@ with st.expander("📋 Recent Metrics Data"):
 
 # ========== FOOTER ==========
 st.markdown("---")
-st.caption("ML Model Monitoring Dashboard • Auto-refresh: Reload page for latest data")
+st.caption("داشبورد پایش مدل • برای مشاهده داده جدید صفحه را رفرش کنید")
